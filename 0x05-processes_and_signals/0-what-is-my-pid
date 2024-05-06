@@ -1,5 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Displays its own PID.
 
-# Task 0: What is my PID
-echo "$$"
-
+echo $$
