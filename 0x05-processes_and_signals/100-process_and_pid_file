@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Function to handle signals
+handle_signal() {
+    case $1 in
+        SIGTERM)
+            echo "I hate the kill command"
+            cleanup_and_exit ;;
+        SIGINT)
+            echo "Y U no love me?!" ;;
+        SIGQUIT)
+            echo "Y U no love me?!"
+            cleanup_and_exit ;;
+    esac
+}
+
+# Function to clean up and exit
+cleanup_and_exit() {
+    echo "Cleaning up and exiting..."
+    rm /var/run/myscript.pid
+    exit
+}
+
+# Trap signals
+trap 'handle_signal SIGTERM' SIGTERM
+trap 'handle_signal SIGINT' SIGINT
+trap 'handle_signal SIGQUIT' SIGQUIT
+
+# Write PID to file
+echo $$ > /var/run/myscript.pid
+
+# Main loop
+while true; do
+    echo "To infinity and beyond"
+    sleep 1
+done
