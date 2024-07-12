@@ -1,44 +1,47 @@
 #!/usr/bin/env bash
-# Serve a page that would return a Hello World string
-# Nginx where it should be listening on port 80
-# Configures a new ubuntu machine by installing
-#
-# colors
-blue='\e[1;34m'
-brown='\e[0;33m'
-green='\e[1;32m'
-reset='\033[0m'
 
-echo -e "${blue}Updating and installing ${brown}Nginx${blue}.${reset}\n"
-sudo apt-get update -y -qq && \
-	 sudo apt-get install nginx -y
+# This script configures Nginx to have a custom 404 page
+# containing the string "Ceci n'est pas une page"
 
-echo -e "\n${blue}Setting up some minor stuff.${reset}\n"
+# Install Nginx if not already installed
+sudo apt-get update
+sudo apt-get install -y nginx
 
-# starting nginx service
-sudo service nginx start
+# Create a custom 404 error page
+sudo sh -c 'echo "<!DOCTYPE html>" > /var/www/html/404.html'
+sudo sh -c 'echo "<html>" >> /var/www/html/404.html'
+sudo sh -c 'echo "<head><title>404 Not Found</title></head>" >> /var/www/html/404.html'
+sudo sh -c 'echo "<body>" >> /var/www/html/404.html'
+sudo sh -c 'echo "<h1>404 Not Found</h1>" >> /var/www/html/404.html'
+sudo sh -c 'echo "<p>Ceci n\'est pas une page</p>" >> /var/www/html/404.html'
+sudo sh -c 'echo "</body></html>" >> /var/www/html/404.html'
 
-# allowing nginx on firewall
-sudo ufw allow 'Nginx HTTP'
+# Configure Nginx to use the custom 404 error page
+sudo unlink /etc/nginx/sites-enabled/default
+sudo tee /etc/nginx/sites-available/default > /dev/null <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
 
-# Give the user ownership to website files for easy editing
-sudo chown -R "$USER":"$USER" /var/www/html
-sudo chmod -R 755 /var/www
+    root /var/www/html;
+    index index.html index.htm;
 
-# Backup default index
-cp /var/www/html/index.nginx-debian.html /var/www/html/index.nginx-debian.html.bckp
+    server_name _;
 
-# Creating new index
-echo -e "Hello World!" > /var/www/html/index.nginx-debian.html
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+    }
 
-# Setting up /redirect_me to a youtube video
-sudo sed -i '24i\	rewrite ^/redirect_me https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;' /etc/nginx/sites-available/default
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
 
-# Set up a 404 page
-echo "Ceci n'est pas une page" >> /var/www/html/error_404.html
-sudo sed -i '25i\	error_page 404 /error_404.html;' /etc/nginx/sites-available/default
+sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# Restarting nginx
-sudo service nginx restart
+# Verify Nginx configuration and restart
+sudo nginx -t
+sudo systemctl reload nginx
 
-echo -e "\n${green}Completed.${reset} ✅\n"
