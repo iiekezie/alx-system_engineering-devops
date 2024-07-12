@@ -1,47 +1,35 @@
 #!/usr/bin/env bash
+# Installs Nginx with the following configurations:
+#+    Listens on port 80.
+#+    Returns a page containing "Holberton School" when queried
+#+     at the root with a curl GET request.
+# Configures /redirect_me as a "301 Moved Permanently".
+# Includes a custom 404 page containing "Ceci n'est pas une page".
 
-# This script configures Nginx to have a custom 404 page
-# containing the string "Ceci n'est pas une page"
+apt-get update
+apt-get install -y nginx
 
-# Install Nginx if not already installed
-sudo apt-get update
-sudo apt-get install -y nginx
+mkdir /etc/nginx/html
+touch /etc/nginx/html/index.html
+echo "Holberton School" > /etc/nginx/html/index.html
+touch /etc/nginx/html/404.html
+echo "Ceci n'est pas une page" > /etc/nginx/html/404.html
 
-# Create a custom 404 error page
-sudo sh -c 'echo "<!DOCTYPE html>" > /var/www/html/404.html'
-sudo sh -c 'echo "<html>" >> /var/www/html/404.html'
-sudo sh -c 'echo "<head><title>404 Not Found</title></head>" >> /var/www/html/404.html'
-sudo sh -c 'echo "<body>" >> /var/www/html/404.html'
-sudo sh -c 'echo "<h1>404 Not Found</h1>" >> /var/www/html/404.html'
-sudo sh -c 'echo "<p>Ceci n\'est pas une page</p>" >> /var/www/html/404.html'
-sudo sh -c 'echo "</body></html>" >> /var/www/html/404.html'
-
-# Configure Nginx to use the custom 404 error page
-sudo unlink /etc/nginx/sites-enabled/default
-sudo tee /etc/nginx/sites-available/default > /dev/null <<EOF
-server {
-    listen 80 default_server;
+printf %s "server {
+    listen 80;
     listen [::]:80 default_server;
+    root   /etc/nginx/html;
+    index  index.html index.htm;
 
-    root /var/www/html;
-    index index.html index.htm;
-
-    server_name _;
+    location /redirect_me {
+        return 301 http://cuberule.com/;
+    }
 
     error_page 404 /404.html;
-    location = /404.html {
-        internal;
+    location /404 {
+      root /etc/nginx/html;
+      internal;
     }
+}" > /etc/nginx/sites-available/default
 
-    location / {
-        try_files \$uri \$uri/ =404;
-    }
-}
-EOF
-
-sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-
-# Verify Nginx configuration and restart
-sudo nginx -t
-sudo systemctl reload nginx
-
+service nginx restart
