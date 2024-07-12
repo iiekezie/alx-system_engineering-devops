@@ -1,40 +1,45 @@
 #!/usr/bin/env bash
-# Configures a new ubuntu machine by installing
-# Nginx where it should be listening on port 80
-# Serve a page that would return a Hello World string
-#
-# colors
-blue='\e[1;34m'
-brown='\e[0;33m'
-green='\e[1;32m'
-reset='\033[0m'
 
-echo -e "${blue}Updating and installing ${brown}Nginx${blue}.${reset}\n"
-sudo apt-get update -y -qq && \
-	 sudo apt-get install nginx -y
+# This script installs and configures nginx to serve a "Hello World!" page at the root
+# and sets up a 301 redirect from /redirect_me to another page
 
-echo -e "\n${blue}Setting up some minor stuff.${reset}\n"
+# Update package lists
+sudo apt-get update -y
 
-# starting nginx service
-sudo service nginx start
+# Install nginx
+sudo apt-get install -y nginx
 
-# allowing nginx on firewall
-sudo ufw allow 'Nginx HTTP'
+# Create a custom index.html file
+echo "Hello World!" | sudo tee /var/www/html/index.html
 
-# Give the user ownership to website files for easy editing
-sudo chown -R "$USER":"$USER" /var/www/html
-sudo chmod -R 755 /var/www
+# Create a new default server block configuration
+sudo bash -c 'cat > /etc/nginx/sites-available/default' << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
 
-# Backup default index
-cp /var/www/html/index.nginx-debian.html /var/www/html/index.nginx-debian.html.bckp
+    root /var/www/html;
+    index index.html index.htm;
 
-# Creating new index
-echo -e "Hello World!" > /var/www/html/index.nginx-debian.html
+    server_name _;
 
-# Setting up /redirect_me to a youtube video
-sudo sed -i '24i\	rewrite ^/redirect_me https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;' /etc/nginx/sites-available/default
+    location / {
+        try_files $uri $uri/ =404;
+    }
 
-# Restarting nginx
+    location /redirect_me {
+        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+    }
+}
+EOF
+
+# Test nginx configuration
+sudo nginx -t
+
+# Restart nginx service
 sudo service nginx restart
 
-echo -e "\n${green}Completed.${reset} ✅\n"
+# Verify the redirect
+sleep 5
+curl -sI localhost/redirect_me | grep "301 Moved Permanently"
+
