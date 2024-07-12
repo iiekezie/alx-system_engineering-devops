@@ -11,14 +11,14 @@ sudo apt-get install -y nginx
 # Create a custom index.html file
 echo "Hello World!" | sudo tee /var/www/html/index.html
 
-# Remove default server block and create a new one to serve the custom page
+# Create a new default server block configuration
 sudo bash -c 'cat > /etc/nginx/sites-available/default' << 'EOF'
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
 
     root /var/www/html;
-    index index.html index.htm index.nginx-debian.html;
+    index index.html index.htm;
 
     server_name _;
 
@@ -33,4 +33,8 @@ sudo nginx -t
 
 # Restart nginx service
 sudo service nginx restart
+
+# Verify nginx is running and serving the expected content
+sleep 5
+curl -sI localhost | grep "200 OK" && curl -s localhost | grep "Hello World!"
 
