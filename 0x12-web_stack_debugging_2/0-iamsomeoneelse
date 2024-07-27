@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
-# Script to run the whoami command under the user passed as an argument
 
-sudo -u "$1"  whoami
+# Check if the user has provided exactly one argument
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <username>"
+    exit 1
+fi
+
+# Check if the user exists
+if ! id "$1" &>/dev/null; then
+    echo "Error: User '$1' does not exist."
+    exit 1
+fi
+
+# Run the whoami command as the specified user
+sudo -u "$1" whoami
 
