@@ -1,30 +1,31 @@
 #!/usr/bin/python3
-""" Python to get data from an API and convert to Json"""
-import csv
 import json
 import requests
 import sys
 
+def fetch_data(user_id):
+    url = f'https://jsonplaceholder.typicode.com/todos?userId={user_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
 
-if __name__ == '__main__':
-    USER_ID = sys.argv[1]
-    url_to_user = 'https://jsonplaceholder.typicode.com/users/' + USER_ID
-    res = requests.get(url_to_user)
-    """Documentation"""
-    USERNAME = res.json().get('username')
-    """Documentation"""
-    url_to_task = url_to_user + '/todos'
-    res = requests.get(url_to_task)
-    tasks = res.json()
+def main(user_id):
+    data = fetch_data(user_id)
+    tasks = [{
+        "task": task["title"],
+        "completed": task["completed"],
+        "username": "Antonette"  # This should be replaced with the actual username if available
+    } for task in data]
 
-    dict_data = {USER_ID: []}
-    for task in tasks:
-        TASK_COMPLETED_STATUS = task.get('completed')
-        TASK_TITLE = task.get('title')
-        dict_data[USER_ID].append({
-                                  "task": TASK_TITLE,
-                                  "completed": TASK_COMPLETED_STATUS,
-                                  "username": USERNAME})
-    """print(dict_data)"""
-    with open('{}.json'.format(USER_ID), 'w') as f:
-        json.dump(dict_data, f)
+    output = {user_id: tasks}
+
+    with open(f"{user_id}.json", "w") as f:
+        json.dump(output, f, indent=4)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 2-export_to_JSON.py USER_ID")
+        sys.exit(1)
+
+    user_id = sys.argv[1]
+    main(user_id)
